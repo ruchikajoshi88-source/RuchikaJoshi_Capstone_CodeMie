@@ -1,0 +1,14 @@
+{
+  "name": "tour-booking-summary-app",
+  "private": true,
+  "workspaces": [
+    "api",
+    "web"
+  ],
+  "scripts": {
+    "dev": "npm --workspace api run dev & npm --workspace web run dev",
+    "build": "npm -workspace api run build && npm -workspace web run build",
+    "start": "npm -workspace api run start",
+    "lint": "npm --workspace web run lint"
+  }
+}
