@@ -38,3 +38,15 @@ The Web UI includes a "Download Brochure" card that:
 
 ## Test Ids
  All `data-testid` attributes are canonical kebab-case (e.g. `booking-form`, `download-brochure-button`).
+
+## Same-origin serving
+After `npm run build`, `npm start` serves the built web UI and `/api` from the same origin (http://localhost:5173).
+
+## Persistence
+Bookings are stored in SQLite with a `created_at` column. `GET /api/bookings` returns 200 ordered by `created_at DESC, id DESC`; `POST /api/bookings` returns 201.
+
+## Tests
+```bash
+npm test      # api (node:test) + web (vitest)
+npm run lint
+```

@@ -7,8 +7,9 @@
   ],
   "scripts": {
     "dev": "npm --workspace api run dev & npm --workspace web run dev",
-    "build": "npm -workspace api run build && npm -workspace web run build",
+    "build": "npm --workspace api run build && npm --workspace web run build",
     "start": "npm -workspace api run start",
-    "lint": "npm --workspace web run lint"
+    "lint": "npm --workspace web run lint",
+    "test": "npm --workspace api run test && npm --workspace web run test"
   }
 }

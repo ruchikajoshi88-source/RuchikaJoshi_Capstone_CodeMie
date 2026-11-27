@@ -1,83 +1,68 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useState } from "react";
 
-function useSimulateError() {
-  return useMemo(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      return params.get("simulate_error") === "true";
-    } catch {
-      return false;
-    }
-  }, []);
+export const BROCHURE_FILENAME = "tour-brochure.pdf";
+export const BROCHURE_HELPER_TEXT = "Demo file generated in-browser";
+export const BROCHURE_ERROR_TEXT = "Unable to generate brochure (demo)";
+
+function isSimulateErrorEnabled() {
+  try {
+    return new URLSearchParams(window.location.search).get("simulate_error") === "true";
+  } catch {
+    return false;
+  }
 }
 
-function generateDemoPdfBlob() {
-  // Demo binary data that downloads as a pdf file.
-  // Note this is not a full PDF generator - just a small demo file.
-  const content = [
-    "%PDF-1.4\n",
-    "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
- ",
-    "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
- ",
-    "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 300 144] /Contents 4 0 R /Resources << >> >> endobj
-
- ",
-    "4 0 obj << /Length 55 >> stream
-",
-    "BT
-\/F1 18 Tf
-72 100 Td
-(Tour Brochure - Demo) Tj
-ET
-stream
-endobj
-
- ",
-    "xref
-0 5
-0000000000 65535 f 
-0000000010 00000 n 
-0000000060 00000 n 
-0000000115 00000 n 
-0000000215 00000 n 
-trailer << /Size 5 /Root 1 0 R >>
-startxref
-300
-%%EOF
-"
+export function generateDemoPdfBlob() {
+  const stream = "BT /F1 18 Tf 24 72 Td (Tour Brochure - Demo) Tj ET";
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 144] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
   ];
-  return new Blob(content, { type: "application/pdf" });
+
+  let pdf = "%PDF-1.4\n";
+  const offsets = [];
+  objects.forEach((body, i) => {
+    offsets.push(pdf.length);
+    pdf += `${i + 1} 0 obj\n${body}\nendobj\n`;
+  });
+
+  const xrefStart = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  offsets.forEach((o) => {
+    pdf += `${String(o).padStart(10, "0")} 00000 n \n`;
+  });
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF\n`;
+
+  return new Blob([pdf], { type: "application/pdf" });
 }
 
 export default function DownloadBrochureCard() {
-  const simulateError = useSimulateErroror();
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    setError("");
-  }, [simulateError]);
-
   const onDownload = () => {
-    if (simulateError) {
-      setError("Unable to generate brochure (demo)");
+    if (isSimulateErrorEnabled()) {
+      setError(BROCHURE_ERROR_TEXT);
       return;
     }
 
-    setError("");
-    const blob = generateDemoPdfBlob();
-    const url = URL.createObjectURL(blob);
-
+    let url;
     try {
+      url = URL.createObjectURL(generateDemoPdfBlob());
       const a = document.createElement("a");
       a.href = url;
-      a.download = "tour-brochure.pdf";
+      a.download = BROCHURE_FILENAME;
       a.rel = "noopener";
       document.body.appendChild(a);
       a.click();
       a.remove();
+      setError("");
+    } catch {
+      setError(BROCHURE_ERROR_TEXT);
     } finally {
-      URL.revokeObjectURL(url);
+      if (url) URL.revokeObjectURL(url);
     }
   };
 
@@ -95,15 +80,15 @@ export default function DownloadBrochureCard() {
         </button>
       </div>
 
-      <div className="helper" data-testid="download-brochure-helper-text">
-        Demo file generated in-browser
-      </div>
-
       {error ? (
-        <div className="error" data-testid="download-brochure-error">
+        <div className="error" role="alert" data-testid="download-brochure-error">
           {error}
         </div>
-      ) : null}
+      ) : (
+        <div className="helper" data-testid="download-brochure-helper-text">
+          {BROCHURE_HELPER_TEXT}
+        </div>
+      )}
     </div>
-  ); 
+  );
 }

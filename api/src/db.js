@@ -1,12 +1,12 @@
 const path = require("path");
 const Database = require("better-sqlite3");
 
-const db = new Database(path.join(__dirname, "..", "data.sqlite3"));
+const dbPath = process.env.DB_PATH || path.join(__dirname, "..", "data.sqlite3");
+const db = new Database(dbPath);
 
 db.pragma("journal_mode = WAL");
 
-db.exec(
-`
+db.exec(`
   CREATE TABLE IF NOT EXISTS bookings (
     id TEXT PRIMARY KEY,
     fullName TEXT NOT NULL,
@@ -17,10 +17,10 @@ db.exec(
     people INTEGER NOT NULL,
     travelDate TEXT NOT NULL,
     notes TEXT NULL,
-    createdAt TEXT NOT NULL
+    created_at TEXT NOT NULL
   );
 
-`
+  CREATE INDEX IF NOT EXISTS idx_bookings_created_at_id ON bookings (created_at DESC, id DESC);
 `);
 
 module.exports = { db };

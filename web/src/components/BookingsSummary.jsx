@@ -34,7 +34,7 @@ export default function BookingsSummary({ bookings, onRefresh }) {
                 <td>{b.travelDate}</td>
                 <td>{b.people}</td>
                 <td>{b.fullName}</td>
-                <td>{new Date(b.createdAt).toLocaleString()}</td>
+                <td>{new Date(b.created_at).toLocaleString()}</td>
               </tr>
             ))
           )}

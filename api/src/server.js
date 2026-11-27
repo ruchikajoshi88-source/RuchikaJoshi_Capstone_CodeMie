@@ -1,7 +1,9 @@
+const fs = require("fs");
+const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const { z } = require("zod");
-const { v4 uuidv4 } = require("uuid");
+const { v4: uuidv4 } = require("uuid");
 
 const { db } = require("./db");
 
@@ -25,8 +27,8 @@ const BookingCreateSchema = z.object({
 });
 
 app.get("/api/bookings", (req, res) => {
-  const rows = db.prepare("SELECT * FROM bookings ORDER BY createdAt DESC").all();
-  res.json({ bookings: rows });
+  const rows = db.prepare("SELECT * FROM bookings ORDER BY created_at DESC, id DESC").all();
+  res.status(200).json({ bookings: rows });
 });
 
 app.post("/api/bookings", (req, res) => {
@@ -35,23 +37,40 @@ app.post("/api/bookings", (req, res) => {
     return res.status(400).json({ error: "Invalid booking", details: parsed.error.flatten() });
   }
 
-  const id = uuidv4();
-  const createdAt = new Date().toISOString();
-  const booking = { id, createdAt, ...parsed.data };
+  const booking = {
+    id: uuidv4(),
+    created_at: new Date().toISOString(),
+    phone: null,
+    notes: null,
+    ...parsed.data
+  };
 
   db.prepare(
-    `Replace INTO bookings (
-      id, fullName, email, phone, tourId, tourName, people, travelDate, notes, createdAt
+    `INSERT INTO bookings (
+      id, fullName, email, phone, tourId, tourName, people, travelDate, notes, created_at
     ) VALUES (
-      @id, @fullName, @email, @phone, @tourId, @tourName, @people, @travelDate, @notes, @createdAt
+      @id, @fullName, @email, @phone, @tourId, @tourName, @people, @travelDate, @notes, @created_at
     )`
   ).run(booking);
 
   res.status(201).json({ booking });
 });
 
+// Serve the built web UI from the same origin as the API.
+const webDist = path.join(__dirname, "..", "..", "web", "dist");
+if (fs.existsSync(webDist)) {
+  app.use(express.static(webDist));
+  app.get(/^(?!\/api\/).*/, (req, res) => {
+    res.sendFile(path.join(webDist, "index.html"));
+  });
+}
+
 const PORT = process.env.PORT || 5173;
 
-app.listen(PORT, () => {
-  console.log(`API listening on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`API listening on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = { app };
